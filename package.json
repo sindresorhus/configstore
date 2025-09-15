@@ -12,6 +12,7 @@
 	},
 	"type": "module",
 	"exports": "./index.js",
+	"types": "./index.d.ts",
 	"sideEffects": false,
 	"engines": {
 		"node": ">=18"
@@ -20,7 +21,8 @@
 		"test": "xo && ava"
 	},
 	"files": [
-		"index.js"
+		"index.js",
+		"index.d.ts"
 	],
 	"keywords": [
 		"config",

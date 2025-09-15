@@ -50,6 +50,19 @@ test('.set() with object and .get()', t => {
 	t.is(config.get('baz.foo.bar'), 'baz');
 });
 
+test('.set() handles undefined values correctly', t => {
+	const {config} = t.context;
+	// Undefined values are stripped during JSON serialization, so they don't persist
+	config.set('undefinedValue', undefined);
+	t.is(config.get('undefinedValue'), undefined);
+	t.false(config.has('undefinedValue')); // JSON.stringify strips undefined values
+
+	// Null values persist correctly
+	config.set('nullValue', null);
+	t.is(config.get('nullValue'), null);
+	t.true(config.has('nullValue'));
+});
+
 test('.has()', t => {
 	const {config} = t.context;
 	config.set('foo', '🦄');
@@ -149,4 +162,37 @@ test('ensure necessary sub-directories are created', t => {
 	t.false(fs.existsSync(config.path));
 	config.set('foo', 'bar');
 	t.true(fs.existsSync(config.path));
+});
+
+test('clearInvalidConfig: true (default) clears corrupted JSON', t => {
+	const {config} = t.context;
+
+	// Set some data then corrupt the file
+	config.set('test', 'data');
+	fs.writeFileSync(config.path, '{"corrupted": json}', 'utf8');
+
+	// Should clear the file and return empty object (default behavior)
+	const configWithCorruptedFile = new Configstore('configstore-test');
+	t.deepEqual(configWithCorruptedFile.all, {});
+
+	// File should be cleared
+	const clearedContent = fs.readFileSync(config.path, 'utf8');
+	t.is(clearedContent, '');
+});
+
+test('clearInvalidConfig: false preserves corrupted JSON and throws', t => {
+	// Create config, set data, then corrupt the file
+	const config = new Configstore('configstore-test-preserve');
+	config.set('test', 'data');
+
+	const corruptedContent = '{"corrupted": json}';
+	fs.writeFileSync(config.path, corruptedContent, 'utf8');
+
+	// Should throw SyntaxError and preserve file
+	const configWithCorruptedFile = new Configstore('configstore-test-preserve', undefined, {clearInvalidConfig: false});
+	t.throws(() => configWithCorruptedFile.all, {name: 'SyntaxError'});
+
+	// File should be preserved
+	const preservedContent = fs.readFileSync(config.path, 'utf8');
+	t.is(preservedContent, corruptedContent);
 });

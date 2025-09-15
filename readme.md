@@ -37,6 +37,10 @@ config.set('bar.baz', true);
 console.log(config.get('bar'));
 //=> {baz: true}
 
+// Use default values with nullish coalescing
+console.log(config.get('nonexistent') ?? 'default value');
+//=> 'default value'
+
 config.delete('awesome');
 console.log(config.get('awesome'));
 //=> undefined
@@ -80,6 +84,13 @@ Default: Automatic
 
 Set the path of the config file. Overrides the `packageName` and `globalConfigPath` options.
 
+##### clearInvalidConfig
+
+Type: `boolean`\
+Default: `true`
+
+Clear the config file if it contains invalid JSON. If set to `false`, a `SyntaxError` will be thrown instead of clearing the file. This allows you to recover corrupted config files manually.
+
 ### Instance
 
 You can use [dot-notation](https://github.com/sindresorhus/dot-prop) in a `key` to access nested properties.
@@ -87,6 +98,8 @@ You can use [dot-notation](https://github.com/sindresorhus/dot-prop) in a `key` 
 ### .set(key, value)
 
 Set an item.
+
+You can use [dot-notation](https://github.com/sindresorhus/dot-prop) in a `key` to access nested properties.
 
 ### .set(object)
 
@@ -96,13 +109,25 @@ Set multiple items at once.
 
 Get an item.
 
+You can use [dot-notation](https://github.com/sindresorhus/dot-prop) in a `key` to access nested properties.
+
+> [!TIP]
+> Use the [nullish coalescing operator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing) (`??`) to provide default values:
+> ```js
+> const value = config.get('key') ?? 'default value';
+> ```
+
 ### .has(key)
 
 Check if an item exists.
 
+You can use [dot-notation](https://github.com/sindresorhus/dot-prop) in a `key` to access nested properties.
+
 ### .delete(key)
 
 Delete an item.
+
+You can use [dot-notation](https://github.com/sindresorhus/dot-prop) in a `key` to access nested properties.
 
 ### .clear()
 

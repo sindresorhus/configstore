@@ -24,9 +24,18 @@ const permissionError = 'You don\'t have access to this file.';
 const mkdirOptions = {mode: 0o0700, recursive: true};
 const writeFileOptions = {mode: 0o0600};
 
+function handlePermissionError(error) {
+	if (error.code === 'EACCES') {
+		error.message = `${error.message}\n${permissionError}\n`;
+	}
+
+	throw error;
+}
+
 export default class Configstore {
 	constructor(id, defaults, options = {}) {
 		this._path = options.configPath ?? getConfigDirectory(id, options.globalConfigPath);
+		this._clearInvalidConfig = options.clearInvalidConfig ?? true;
 
 		if (defaults) {
 			this.all = {
@@ -45,18 +54,19 @@ export default class Configstore {
 				return {};
 			}
 
-			// Improve the message of permission errors
-			if (error.code === 'EACCES') {
-				error.message = `${error.message}\n${permissionError}\n`;
-			}
-
-			// Empty the file if it encounters invalid JSON
+			// Handle invalid JSON
 			if (error.name === 'SyntaxError') {
-				writeFileSync(this._path, '', writeFileOptions);
-				return {};
+				if (this._clearInvalidConfig) {
+					writeFileSync(this._path, '', writeFileOptions);
+					return {};
+				}
+
+				throw error;
 			}
 
-			throw error;
+			handlePermissionError(error); // This always throws
+			/* c8 ignore next */
+			return {}; // Unreachable, but satisfies linter
 		}
 	}
 
@@ -67,12 +77,7 @@ export default class Configstore {
 
 			writeFileSync(this._path, JSON.stringify(value, undefined, '\t'), writeFileOptions);
 		} catch (error) {
-			// Improve the message of permission errors
-			if (error.code === 'EACCES') {
-				error.message = `${error.message}\n${permissionError}\n`;
-			}
-
-			throw error;
+			handlePermissionError(error); // This always throws
 		}
 	}
 
@@ -87,7 +92,7 @@ export default class Configstore {
 	set(key, value) {
 		const config = this.all;
 
-		if (arguments.length === 1) {
+		if (typeof key === 'object' && arguments.length === 1) {
 			for (const k of Object.keys(key)) {
 				setProperty(config, k, key[k]);
 			}
